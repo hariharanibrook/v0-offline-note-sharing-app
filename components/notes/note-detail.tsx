@@ -7,8 +7,9 @@ import { Note, NoteFile } from '@/lib/db';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, Edit2, Download, Copy } from 'lucide-react';
+import { ArrowLeft, Edit2, Download, Copy, Share2 } from 'lucide-react';
 import { toast } from 'sonner';
+import ShareModal from './share-modal';
 
 interface NoteDetailProps {
   note: Note;
@@ -18,6 +19,8 @@ interface NoteDetailProps {
 export default function NoteDetail({ note, files }: NoteDetailProps) {
   const router = useRouter();
   const [copiedToClipboard, setCopiedToClipboard] = useState(false);
+  const [shareModalOpen, setShareModalOpen] = useState(false);
+  const [currentNote, setCurrentNote] = useState(note);
 
   const handleCopy = async () => {
     try {
@@ -75,12 +78,22 @@ export default function NoteDetail({ note, files }: NoteDetailProps) {
             Last updated {formatDate(note.updatedAt)}
           </p>
         </div>
-        <Link href={`/dashboard/notes/${note.id}/edit`}>
-          <Button>
-            <Edit2 className="w-4 h-4 mr-2" />
-            Edit
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShareModalOpen(true)}
+            className="gap-2"
+          >
+            <Share2 className="w-4 h-4" />
+            Share
           </Button>
-        </Link>
+          <Link href={`/dashboard/notes/${note.id}/edit`}>
+            <Button className="gap-2">
+              <Edit2 className="w-4 h-4" />
+              Edit
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Tags */}
@@ -159,6 +172,18 @@ export default function NoteDetail({ note, files }: NoteDetailProps) {
           </CardContent>
         </Card>
       )}
+
+      <ShareModal
+        note={currentNote}
+        isOpen={shareModalOpen}
+        onOpenChange={setShareModalOpen}
+        onShare={(code) => {
+          setCurrentNote({ ...currentNote, isShared: true, shareCode: code });
+        }}
+        onUnshare={() => {
+          setCurrentNote({ ...currentNote, isShared: false, shareCode: undefined });
+        }}
+      />
     </div>
   );
 }

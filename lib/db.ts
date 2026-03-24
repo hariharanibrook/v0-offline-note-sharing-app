@@ -29,6 +29,19 @@ export interface Note {
   updatedAt: number;
   tags: string[];
   fileIds: string[];
+  isShared?: boolean;
+  shareCode?: string;
+  sharedAt?: number;
+}
+
+export interface SharedNote {
+  id: string;
+  noteId: string;
+  shareCode: string;
+  sharedBy: string;
+  sharedAt: number;
+  expiresAt?: number;
+  viewCount: number;
 }
 
 interface NotesDB extends DBSchema {
@@ -40,12 +53,17 @@ interface NotesDB extends DBSchema {
   notes: {
     key: string;
     value: Note;
-    indexes: { 'by-userId': string; 'by-createdAt': number };
+    indexes: { 'by-userId': string; 'by-createdAt': number; 'by-shareCode': string };
   };
   noteFiles: {
     key: string;
     value: NoteFile;
     indexes: { 'by-noteId': string };
+  };
+  sharedNotes: {
+    key: string;
+    value: SharedNote;
+    indexes: { 'by-shareCode': string; 'by-noteId': string };
   };
 }
 
@@ -67,12 +85,20 @@ export async function initDB(): Promise<IDBPDatabase<NotesDB>> {
         const notesStore = db.createObjectStore('notes', { keyPath: 'id' });
         notesStore.createIndex('by-userId', 'userId');
         notesStore.createIndex('by-createdAt', 'createdAt');
+        notesStore.createIndex('by-shareCode', 'shareCode');
       }
 
       // Note files store
       if (!db.objectStoreNames.contains('noteFiles')) {
         const filesStore = db.createObjectStore('noteFiles', { keyPath: 'id' });
         filesStore.createIndex('by-noteId', 'noteId');
+      }
+
+      // Shared notes store
+      if (!db.objectStoreNames.contains('sharedNotes')) {
+        const sharedStore = db.createObjectStore('sharedNotes', { keyPath: 'id' });
+        sharedStore.createIndex('by-shareCode', 'shareCode', { unique: true });
+        sharedStore.createIndex('by-noteId', 'noteId');
       }
     },
   });
@@ -170,4 +196,92 @@ export async function deleteNoteFile(fileId: string): Promise<void> {
 export async function getNoteFile(fileId: string): Promise<NoteFile | undefined> {
   const database = await getDB();
   return database.get('noteFiles', fileId);
+}
+
+// Sharing operations
+export async function shareNote(noteId: string, userId: string, shareCode: string): Promise<SharedNote> {
+  const database = await getDB();
+  const note = await getNote(noteId);
+  
+  if (!note) {
+    throw new Error('Note not found');
+  }
+
+  if (note.userId !== userId) {
+    throw new Error('Unauthorized to share this note');
+  }
+
+  const sharedNote: SharedNote = {
+    id: `${noteId}-shared`,
+    noteId,
+    shareCode,
+    sharedBy: userId,
+    sharedAt: Date.now(),
+    viewCount: 0,
+  };
+
+  // Update note with sharing info
+  note.isShared = true;
+  note.shareCode = shareCode;
+  note.sharedAt = Date.now();
+  await updateNote(note);
+
+  // Add to shared notes
+  await database.put('sharedNotes', sharedNote);
+  return sharedNote;
+}
+
+export async function getSharedNoteByCode(shareCode: string): Promise<Note | undefined> {
+  const database = await getDB();
+  try {
+    const sharedNote = await database.getFromIndex('sharedNotes', 'by-shareCode', shareCode);
+    if (!sharedNote) return undefined;
+
+    // Increment view count
+    sharedNote.viewCount += 1;
+    await database.put('sharedNotes', sharedNote);
+
+    // Get the actual note
+    return database.get('notes', sharedNote.noteId);
+  } catch {
+    return undefined;
+  }
+}
+
+export async function unshareNote(noteId: string, userId: string): Promise<void> {
+  const database = await getDB();
+  const note = await getNote(noteId);
+
+  if (!note) {
+    throw new Error('Note not found');
+  }
+
+  if (note.userId !== userId) {
+    throw new Error('Unauthorized to modify this note');
+  }
+
+  // Update note
+  note.isShared = false;
+  note.shareCode = undefined;
+  note.sharedAt = undefined;
+  await updateNote(note);
+
+  // Delete shared note
+  try {
+    const sharedNote = await database.getFromIndex('sharedNotes', 'by-noteId', noteId);
+    if (sharedNote) {
+      await database.delete('sharedNotes', sharedNote.id);
+    }
+  } catch {
+    // Ignore if not found
+  }
+}
+
+export async function getSharedNoteStats(noteId: string): Promise<SharedNote | undefined> {
+  const database = await getDB();
+  try {
+    return await database.getFromIndex('sharedNotes', 'by-noteId', noteId);
+  } catch {
+    return undefined;
+  }
 }

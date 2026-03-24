@@ -61,8 +61,29 @@ export default function DashboardPage() {
     );
   }
 
+  // Calculate stats
+  const sharedNotes = notes.filter(n => n.isShared).length;
+
   return (
     <div className="space-y-8">
+      {/* Stats Section */}
+      {notes.length > 0 && (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg p-6 border border-primary/20 hover:border-primary/40 transition-colors">
+            <p className="text-sm text-muted-foreground mb-2">Total Notes</p>
+            <p className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{notes.length}</p>
+          </div>
+          <div className="bg-gradient-to-br from-secondary/10 to-primary/10 rounded-lg p-6 border border-secondary/20 hover:border-secondary/40 transition-colors">
+            <p className="text-sm text-muted-foreground mb-2">Shared Notes</p>
+            <p className="text-4xl font-bold bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent">{sharedNotes}</p>
+          </div>
+          <div className="bg-gradient-to-br from-accent/10 to-secondary/10 rounded-lg p-6 border border-accent/20 hover:border-accent/40 transition-colors">
+            <p className="text-sm text-muted-foreground mb-2">Responsive</p>
+            <p className="text-lg font-semibold text-accent">📱 Mobile Ready</p>
+          </div>
+        </div>
+      )}
+
       <div>
         <h1 className="text-3xl font-bold mb-2">Your Notes</h1>
         <p className="text-muted-foreground">

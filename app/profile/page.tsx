@@ -62,19 +62,22 @@ export default function ProfilePage() {
     day: 'numeric',
   });
 
+  const sharedNotes = notes.filter(n => n.isShared).length;
+
   return (
     <div className="space-y-8">
       {/* Profile Header */}
-      <Card>
+      <Card className="border-primary/20 bg-gradient-to-br from-card via-card to-card/50">
         <CardHeader>
           <div className="flex items-start justify-between">
             <div className="flex gap-4">
-              <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                <UserIcon className="w-8 h-8 text-primary" />
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg">
+                <UserIcon className="w-8 h-8 text-white" />
               </div>
               <div>
-                <CardTitle className="text-2xl">{user.name}</CardTitle>
-                <CardDescription>{user.email}</CardDescription>
+                <CardTitle className="text-3xl bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{user.name}</CardTitle>
+                <CardDescription className="text-base">{user.email}</CardDescription>
+                <p className="text-xs text-muted-foreground mt-2">Joined {joinDate}</p>
               </div>
             </div>
           </div>
@@ -94,46 +97,36 @@ export default function ProfilePage() {
       </Card>
 
       {/* Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Total Notes
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{totalNotes}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {totalNotes === 1 ? '1 note' : `${totalNotes} notes`} created
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg p-6 border border-primary/20 hover:border-primary/40 transition-colors">
+          <div className="flex items-center gap-3 mb-3">
+            <FileText className="w-5 h-5 text-primary" />
+            <p className="text-sm text-muted-foreground">Total Notes</p>
+          </div>
+          <p className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{totalNotes}</p>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Tag className="w-4 h-4" />
-              Total Tags
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{allTags.length}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              {allTags.length === 1 ? '1 unique tag' : `${allTags.length} unique tags`}
-            </p>
-          </CardContent>
-        </Card>
+        <div className="bg-gradient-to-br from-secondary/10 to-primary/10 rounded-lg p-6 border border-secondary/20 hover:border-secondary/40 transition-colors">
+          <div className="flex items-center gap-3 mb-3">
+            <Tag className="w-5 h-5 text-secondary" />
+            <p className="text-sm text-muted-foreground">Unique Tags</p>
+          </div>
+          <p className="text-3xl font-bold bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent">{allTags.length}</p>
+        </div>
 
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-sm font-medium">Total Words</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{totalWords.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground mt-1">across all notes</p>
-          </CardContent>
-        </Card>
+        <div className="bg-gradient-to-br from-accent/10 to-primary/10 rounded-lg p-6 border border-accent/20 hover:border-accent/40 transition-colors">
+          <div className="flex items-center gap-3 mb-3">
+            <p className="text-sm text-muted-foreground">Total Words</p>
+          </div>
+          <p className="text-3xl font-bold bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">{totalWords.toLocaleString()}</p>
+        </div>
+
+        <div className="bg-gradient-to-br from-primary/10 to-secondary/10 rounded-lg p-6 border border-primary/20 hover:border-primary/40 transition-colors">
+          <div className="flex items-center gap-3 mb-3">
+            <p className="text-sm text-muted-foreground">Shared Notes</p>
+          </div>
+          <p className="text-3xl font-bold bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">{sharedNotes}</p>
+        </div>
       </div>
 
       {/* Top Tags */}

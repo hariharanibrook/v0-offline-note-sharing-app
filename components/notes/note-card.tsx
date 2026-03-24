@@ -42,17 +42,20 @@ export default function NoteCard({ note, onNoteDeleted }: NoteCardProps) {
 
   return (
     <Link href={`/dashboard/notes/${note.id}`}>
-      <Card className="h-full hover:shadow-md transition-shadow cursor-pointer group">
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between gap-2">
-            <div className="flex-1 min-w-0">
-              <CardTitle className="line-clamp-2 group-hover:text-primary transition-colors">
-                {note.title}
-              </CardTitle>
-              <CardDescription className="text-xs">
-                {formatDate(note.updatedAt)}
-              </CardDescription>
-            </div>
+      <div className="group relative h-full">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg blur opacity-0 group-hover:opacity-100 transition-opacity" />
+        <Card className="h-full cursor-pointer relative border-primary/10 hover:border-primary/30 transition-all hover:shadow-lg bg-gradient-to-br from-card via-card to-card/50">
+          <CardHeader className="pb-3">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex-1 min-w-0">
+                <CardTitle className="line-clamp-2 group-hover:text-primary transition-colors bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-transparent group-hover:from-primary group-hover:to-accent">
+                  {note.title}
+                </CardTitle>
+                <CardDescription className="text-xs mt-2">
+                  {formatDate(note.updatedAt)}
+                  {note.isShared && <span className="ml-2 text-primary font-semibold">🔗 Shared</span>}
+                </CardDescription>
+              </div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild onClick={(e) => e.preventDefault()}>
                 <Button
@@ -79,9 +82,9 @@ export default function NoteCard({ note, onNoteDeleted }: NoteCardProps) {
               {note.tags.slice(0, 2).map((tag) => (
                 <span
                   key={tag}
-                  className="text-xs bg-secondary text-secondary-foreground px-2 py-1 rounded"
+                  className="text-xs bg-gradient-to-r from-primary/10 to-accent/10 text-primary px-2 py-1 rounded border border-primary/20"
                 >
-                  {tag}
+                  #{tag}
                 </span>
               ))}
               {note.tags.length > 2 && (
@@ -92,7 +95,8 @@ export default function NoteCard({ note, onNoteDeleted }: NoteCardProps) {
             </div>
           )}
         </CardContent>
-      </Card>
+        </Card>
+      </div>
     </Link>
   );
 }

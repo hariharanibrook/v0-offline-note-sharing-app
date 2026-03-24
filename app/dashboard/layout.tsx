@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/app/providers';
 import { Button } from '@/components/ui/button';
-import { Plus } from 'lucide-react';
+import { Plus, FileText, LogOut } from 'lucide-react';
 import Link from 'next/link';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -35,21 +35,26 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <header className="sticky top-0 z-40 border-b border-primary/10 bg-gradient-to-r from-background via-background to-background/50 backdrop-blur supports-[backdrop-filter]:bg-background/80">
         <div className="flex items-center justify-between max-w-7xl mx-auto px-6 py-4">
-          <Link href="/dashboard" className="text-2xl font-bold hover:opacity-80">
-            SmartFlow
+          <Link href="/dashboard" className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+            <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+              <FileText className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+              SmartFlow
+            </span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <Link href="/dashboard/new">
-              <Button size="sm" className="gap-2">
+              <Button size="sm" className="gap-2 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90">
                 <Plus className="w-4 h-4" />
                 New Note
               </Button>
             </Link>
             <div className="h-6 w-px bg-border" />
             <Link href="/profile">
-              <Button variant="ghost" size="sm">
+              <Button variant="ghost" size="sm" className="hover:bg-primary/10">
                 {session.name}
               </Button>
             </Link>
@@ -60,8 +65,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 logout();
                 router.push('/');
               }}
+              className="hover:bg-destructive/10 hover:text-destructive gap-2"
             >
-              Logout
+              <LogOut className="w-4 h-4" />
+              <span className="hidden sm:inline">Logout</span>
             </Button>
           </div>
         </div>
