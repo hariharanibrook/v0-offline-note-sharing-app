@@ -1,4 +1,5 @@
 import { openDB, DBSchema, IDBPDatabase } from 'idb';
+import { v4 as uuidv4 } from 'uuid';
 
 export interface User {
   id: string;
@@ -44,6 +45,17 @@ export interface SharedNote {
   viewCount: number;
 }
 
+export interface PersonalShare {
+  id: string;
+  noteId: string;
+  sharedByEmail: string;
+  sharedWithEmail: string;
+  personalShareCode: string;
+  sharedAt: number;
+  accessLevel: 'view' | 'edit';
+  viewCount: number;
+}
+
 interface NotesDB extends DBSchema {
   users: {
     key: string;
@@ -64,6 +76,11 @@ interface NotesDB extends DBSchema {
     key: string;
     value: SharedNote;
     indexes: { 'by-shareCode': string; 'by-noteId': string };
+  };
+  personalShares: {
+    key: string;
+    value: PersonalShare;
+    indexes: { 'by-personalShareCode': string; 'by-noteId': string; 'by-sharedWithEmail': string };
   };
 }
 
@@ -99,6 +116,14 @@ export async function initDB(): Promise<IDBPDatabase<NotesDB>> {
         const sharedStore = db.createObjectStore('sharedNotes', { keyPath: 'id' });
         sharedStore.createIndex('by-shareCode', 'shareCode', { unique: true });
         sharedStore.createIndex('by-noteId', 'noteId');
+      }
+
+      // Personal shares store (person-to-person sharing)
+      if (!db.objectStoreNames.contains('personalShares')) {
+        const personalStore = db.createObjectStore('personalShares', { keyPath: 'id' });
+        personalStore.createIndex('by-personalShareCode', 'personalShareCode', { unique: true });
+        personalStore.createIndex('by-noteId', 'noteId');
+        personalStore.createIndex('by-sharedWithEmail', 'sharedWithEmail');
       }
     },
   });
@@ -284,4 +309,59 @@ export async function getSharedNoteStats(noteId: string): Promise<SharedNote | u
   } catch {
     return undefined;
   }
+}
+
+// Personal sharing operations (person-to-person via link)
+export async function createPersonalShare(
+  noteId: string,
+  sharedByEmail: string,
+  sharedWithEmail: string,
+  accessLevel: 'view' | 'edit' = 'view'
+): Promise<PersonalShare> {
+  const database = await getDB();
+  const personalShareCode = `ps_${uuidv4().slice(0, 12)}`;
+  
+  const personalShare: PersonalShare = {
+    id: `${noteId}-${sharedWithEmail}`,
+    noteId,
+    sharedByEmail,
+    sharedWithEmail,
+    personalShareCode,
+    sharedAt: Date.now(),
+    accessLevel,
+    viewCount: 0,
+  };
+
+  await database.put('personalShares', personalShare);
+  return personalShare;
+}
+
+export async function getPersonalShareByCode(personalShareCode: string): Promise<Note | undefined> {
+  const database = await getDB();
+  try {
+    const personalShare = await database.getFromIndex('personalShares', 'by-personalShareCode', personalShareCode);
+    if (!personalShare) return undefined;
+
+    // Increment view count
+    personalShare.viewCount += 1;
+    await database.put('personalShares', personalShare);
+
+    return database.get('notes', personalShare.noteId);
+  } catch {
+    return undefined;
+  }
+}
+
+export async function getPersonalSharesByNote(noteId: string): Promise<PersonalShare[]> {
+  const database = await getDB();
+  try {
+    return await database.getAllFromIndex('personalShares', 'by-noteId', noteId);
+  } catch {
+    return [];
+  }
+}
+
+export async function removePersonalShare(shareId: string): Promise<void> {
+  const database = await getDB();
+  await database.delete('personalShares', shareId);
 }

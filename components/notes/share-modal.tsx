@@ -2,13 +2,13 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/app/providers';
-import { shareNote, unshareNote, getSharedNoteStats } from '@/lib/db';
+import { shareNote, unshareNote, getSharedNoteStats, createPersonalShare, getPersonalSharesByNote, removePersonalShare } from '@/lib/db';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { Copy, Link2, Share2, Trash2 } from 'lucide-react';
-import { Note } from '@/lib/db';
+import { Copy, Link2, Share2, Trash2, Users } from 'lucide-react';
+import { Note, PersonalShare } from '@/lib/db';
 
 interface ShareModalProps {
   note: Note;
@@ -25,10 +25,13 @@ export default function ShareModal({ note, isOpen, onOpenChange, onShare, onUnsh
   const [viewCount, setViewCount] = useState(0);
   const [sharedWith, setSharedWith] = useState<string[]>([]);
   const [newEmail, setNewEmail] = useState('');
+  const [personalShares, setPersonalShares] = useState<PersonalShare[]>([]);
+  const [accessLevel, setAccessLevel] = useState<'view' | 'edit'>('view');
 
   React.useEffect(() => {
-    if (isOpen && note.isShared && session) {
+    if (isOpen && session) {
       loadShareStats();
+      loadPersonalShares();
     }
   }, [isOpen, note.isShared, session]);
 
@@ -44,8 +47,51 @@ export default function ShareModal({ note, isOpen, onOpenChange, onShare, onUnsh
     }
   };
 
+  const loadPersonalShares = async () => {
+    try {
+      const shares = await getPersonalSharesByNote(note.id);
+      setPersonalShares(shares);
+    } catch (error) {
+      console.error('Failed to load personal shares:', error);
+    }
+  };
+
   const generateShareCode = (): string => {
     return Math.random().toString(36).substring(2, 8).toUpperCase();
+  };
+
+  const handleShareWithPerson = async () => {
+    if (!newEmail.trim() || !session) {
+      toast.error('Please enter an email address');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const personalShare = await createPersonalShare(
+        note.id,
+        session.email,
+        newEmail,
+        accessLevel
+      );
+      setPersonalShares([...personalShares, personalShare]);
+      setNewEmail('');
+      toast.success(`Shared with ${newEmail}!`);
+    } catch (error) {
+      toast.error('Failed to create personal share');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRemovePersonalShare = async (shareId: string) => {
+    try {
+      await removePersonalShare(shareId);
+      setPersonalShares(personalShares.filter(s => s.id !== shareId));
+      toast.success('Share removed');
+    } catch (error) {
+      toast.error('Failed to remove share');
+    }
   };
 
   const handleShare = async () => {
@@ -153,47 +199,65 @@ export default function ShareModal({ note, isOpen, onOpenChange, onShare, onUnsh
                 </p>
               </div>
 
-              {/* Shared With Section */}
+              {/* Personal Share Section */}
               <div className="space-y-2">
-                <p className="text-sm font-semibold">Shared With People</p>
-                <div className="space-y-2">
-                  {sharedWith.length > 0 ? (
+                <p className="text-sm font-semibold flex items-center gap-2">
+                  <Users className="w-4 h-4" />
+                  Share With Specific People
+                </p>
+                <div className="bg-gradient-to-r from-rose-500/10 to-pink-500/10 p-4 rounded-lg border border-rose-500/20 space-y-3">
+                  {personalShares.length > 0 && (
                     <div className="space-y-2">
-                      {sharedWith.map((email) => (
-                        <div key={email} className="flex items-center justify-between bg-orange-500/10 p-3 rounded-lg border border-orange-500/20">
-                          <p className="text-sm">{email}</p>
+                      <p className="text-xs text-muted-foreground font-semibold">Shared with:</p>
+                      {personalShares.map((share) => (
+                        <div key={share.id} className="flex items-center justify-between bg-background/50 p-2 rounded border border-border/50">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{share.sharedWithEmail}</p>
+                            <p className="text-xs text-muted-foreground">{share.accessLevel === 'view' ? 'View only' : 'Can edit'}</p>
+                          </div>
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => handleRemoveSharedContact(email)}
-                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleRemovePersonalShare(share.id)}
+                            className="text-destructive"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
                         </div>
                       ))}
                     </div>
-                  ) : (
-                    <p className="text-xs text-muted-foreground">Not shared with anyone yet</p>
                   )}
-                </div>
 
-                {/* Add Person */}
-                <div className="flex gap-2">
-                  <Input
-                    type="email"
-                    placeholder="person@example.com"
-                    value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddSharedContact()}
-                  />
-                  <Button
-                    variant="outline"
-                    onClick={handleAddSharedContact}
-                    size="sm"
-                  >
-                    Add
-                  </Button>
+                  {/* Add Person Form */}
+                  <div className="space-y-2 pt-2 border-t border-border/50">
+                    <label className="text-xs text-muted-foreground">Add email</label>
+                    <div className="flex gap-2">
+                      <Input
+                        type="email"
+                        placeholder="person@example.com"
+                        value={newEmail}
+                        onChange={(e) => setNewEmail(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleShareWithPerson()}
+                        disabled={isLoading}
+                        className="text-sm"
+                      />
+                    </div>
+                    <select
+                      value={accessLevel}
+                      onChange={(e) => setAccessLevel(e.target.value as 'view' | 'edit')}
+                      className="w-full px-3 py-2 rounded border border-border bg-background text-sm"
+                    >
+                      <option value="view">View Only</option>
+                      <option value="edit">Can Edit</option>
+                    </select>
+                    <Button
+                      onClick={handleShareWithPerson}
+                      disabled={isLoading || !newEmail.trim()}
+                      className="w-full bg-gradient-to-r from-rose-500 to-pink-500 hover:from-rose-600 hover:to-pink-600"
+                    >
+                      Share Link
+                    </Button>
+                  </div>
                 </div>
               </div>
 
