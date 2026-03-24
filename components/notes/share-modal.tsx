@@ -23,6 +23,8 @@ export default function ShareModal({ note, isOpen, onOpenChange, onShare, onUnsh
   const [isLoading, setIsLoading] = useState(false);
   const [shareCode, setShareCode] = useState(note.shareCode || '');
   const [viewCount, setViewCount] = useState(0);
+  const [sharedWith, setSharedWith] = useState<string[]>([]);
+  const [newEmail, setNewEmail] = useState('');
 
   React.useEffect(() => {
     if (isOpen && note.isShared && session) {
@@ -87,48 +89,111 @@ export default function ShareModal({ note, isOpen, onOpenChange, onShare, onUnsh
     toast.success('Share link copied to clipboard!');
   };
 
+  const handleAddSharedContact = () => {
+    if (!newEmail.trim()) {
+      toast.error('Please enter an email address');
+      return;
+    }
+    if (sharedWith.includes(newEmail)) {
+      toast.error('Already shared with this email');
+      return;
+    }
+    setSharedWith([...sharedWith, newEmail]);
+    setNewEmail('');
+    toast.success(`Shared with ${newEmail}`);
+  };
+
+  const handleRemoveSharedContact = (email: string) => {
+    setSharedWith(sharedWith.filter(e => e !== email));
+    toast.success(`Removed ${email}`);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Share2 className="w-5 h-5" />
             Share This Note
           </DialogTitle>
           <DialogDescription>
-            Generate a unique link to share this note with others
+            Share with anyone using a link or add specific people
           </DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           {note.isShared && shareCode ? (
-            <div className="space-y-3">
-              <div className="bg-gradient-to-r from-primary/10 to-accent/10 p-4 rounded-lg border border-primary/20">
-                <p className="text-sm text-muted-foreground mb-2">Share Code</p>
-                <div className="flex items-center gap-2">
-                  <code className="flex-1 bg-background px-3 py-2 rounded font-mono text-sm font-semibold">
-                    {shareCode}
-                  </code>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={handleCopyShareLink}
-                    className="gap-2"
-                  >
-                    <Copy className="w-4 h-4" />
-                    Copy
-                  </Button>
+            <div className="space-y-4">
+              {/* Share Link Section */}
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">Share Link</p>
+                <div className="bg-gradient-to-r from-blue-500/10 to-cyan-500/10 p-4 rounded-lg border border-blue-500/20">
+                  <p className="text-xs text-muted-foreground mb-2">Share Code</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 bg-background px-3 py-2 rounded font-mono text-sm font-semibold">
+                      {shareCode}
+                    </code>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyShareLink}
+                      className="gap-2"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-secondary/10 p-3 rounded-lg border border-secondary/20">
-                  <p className="text-xs text-muted-foreground">Views</p>
-                  <p className="text-2xl font-bold text-foreground">{viewCount}</p>
+              {/* Stats */}
+              <div className="bg-purple-500/10 p-4 rounded-lg border border-purple-500/20">
+                <p className="text-xs text-muted-foreground mb-2">Engagement</p>
+                <p className="text-2xl font-bold text-purple-600">
+                  {viewCount} {viewCount === 1 ? 'view' : 'views'}
+                </p>
+              </div>
+
+              {/* Shared With Section */}
+              <div className="space-y-2">
+                <p className="text-sm font-semibold">Shared With People</p>
+                <div className="space-y-2">
+                  {sharedWith.length > 0 ? (
+                    <div className="space-y-2">
+                      {sharedWith.map((email) => (
+                        <div key={email} className="flex items-center justify-between bg-orange-500/10 p-3 rounded-lg border border-orange-500/20">
+                          <p className="text-sm">{email}</p>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveSharedContact(email)}
+                            className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">Not shared with anyone yet</p>
+                  )}
                 </div>
-                <div className="bg-accent/10 p-3 rounded-lg border border-accent/20">
-                  <p className="text-xs text-muted-foreground">Status</p>
-                  <p className="text-sm font-semibold text-accent">Shared</p>
+
+                {/* Add Person */}
+                <div className="flex gap-2">
+                  <Input
+                    type="email"
+                    placeholder="person@example.com"
+                    value={newEmail}
+                    onChange={(e) => setNewEmail(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleAddSharedContact()}
+                  />
+                  <Button
+                    variant="outline"
+                    onClick={handleAddSharedContact}
+                    size="sm"
+                  >
+                    Add
+                  </Button>
                 </div>
               </div>
 
@@ -158,7 +223,7 @@ export default function ShareModal({ note, isOpen, onOpenChange, onShare, onUnsh
               <Button
                 onClick={handleShare}
                 disabled={isLoading}
-                className="w-full gap-2 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
+                className="w-full gap-2 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600"
               >
                 <Link2 className="w-4 h-4" />
                 Generate Share Link
