@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import NoteTemplates, { NoteTemplate } from './note-templates';
 import { toast } from 'sonner';
 import { Upload, X } from 'lucide-react';
 
@@ -30,6 +31,7 @@ interface NoteEditorProps {
 
 export default function NoteEditor({ userId, existingNote, onSave }: NoteEditorProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(!existingNote);
   const [files, setFiles] = useState<Array<{ id: string; name: string; type: string; size: number; blob?: Blob }>>(
     existingNote?.fileIds.map(id => ({ id, name: '', type: '', size: 0 })) || []
   );
@@ -40,6 +42,7 @@ export default function NoteEditor({ userId, existingNote, onSave }: NoteEditorP
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
   } = useForm<NoteForm>({
     resolver: zodResolver(noteSchema),
     defaultValues: {
@@ -49,6 +52,14 @@ export default function NoteEditor({ userId, existingNote, onSave }: NoteEditorP
       tags: existingNote?.tags.join(', ') || '',
     },
   });
+
+  const handleTemplateSelect = (template: NoteTemplate) => {
+    setValue('title', template.name);
+    setValue('content', template.content);
+    setValue('tags', template.tags.join(', '));
+    setShowTemplates(false);
+    toast.success(`Template "${template.name}" loaded!`);
+  };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const uploadedFiles = e.currentTarget.files;
@@ -146,11 +157,36 @@ export default function NoteEditor({ userId, existingNote, onSave }: NoteEditorP
     }
   };
 
+  if (showTemplates && !existingNote) {
+    return (
+      <div className="space-y-6">
+        <NoteTemplates onSelectTemplate={handleTemplateSelect} />
+        <Button
+          variant="outline"
+          onClick={() => setShowTemplates(false)}
+          className="w-full"
+        >
+          Create Blank Note
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+      {!existingNote && (
+        <Button
+          variant="ghost"
+          onClick={() => setShowTemplates(true)}
+          className="text-primary hover:text-accent"
+        >
+          ← Back to Templates
+        </Button>
+      )}
+
       <Card>
         <CardHeader>
-          <CardTitle>Note Details</CardTitle>
+          <CardTitle>{existingNote ? 'Edit Note' : 'Create New Note'}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">

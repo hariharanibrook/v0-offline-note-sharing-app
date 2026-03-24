@@ -5,6 +5,7 @@ import { useAuth } from '@/app/providers';
 import { getNotesByUser, searchNotes } from '@/lib/db';
 import { Note } from '@/lib/db';
 import NoteCard from '@/components/notes/note-card';
+import FeatureShowcase from '@/components/dashboard/feature-showcase';
 import { Card } from '@/components/ui/card';
 import { Empty } from '@/components/ui/empty';
 import { Input } from '@/components/ui/input';
@@ -66,20 +67,23 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-8">
+      {/* Feature Showcase */}
+      <FeatureShowcase />
+
       {/* Stats Section */}
       {notes.length > 0 && (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-gradient-to-br from-primary/10 to-accent/10 rounded-lg p-6 border border-primary/20 hover:border-primary/40 transition-colors">
+          <div className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 rounded-lg p-6 border border-blue-500/20 hover:border-blue-500/40 transition-colors">
             <p className="text-sm text-muted-foreground mb-2">Total Notes</p>
-            <p className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{notes.length}</p>
+            <p className="text-4xl font-bold bg-gradient-to-r from-blue-500 to-cyan-500 bg-clip-text text-transparent">{notes.length}</p>
           </div>
-          <div className="bg-gradient-to-br from-secondary/10 to-primary/10 rounded-lg p-6 border border-secondary/20 hover:border-secondary/40 transition-colors">
+          <div className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-lg p-6 border border-purple-500/20 hover:border-purple-500/40 transition-colors">
             <p className="text-sm text-muted-foreground mb-2">Shared Notes</p>
-            <p className="text-4xl font-bold bg-gradient-to-r from-secondary to-primary bg-clip-text text-transparent">{sharedNotes}</p>
+            <p className="text-4xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">{sharedNotes}</p>
           </div>
-          <div className="bg-gradient-to-br from-accent/10 to-secondary/10 rounded-lg p-6 border border-accent/20 hover:border-accent/40 transition-colors">
-            <p className="text-sm text-muted-foreground mb-2">Responsive</p>
-            <p className="text-lg font-semibold text-accent">📱 Mobile Ready</p>
+          <div className="bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-lg p-6 border border-green-500/20 hover:border-green-500/40 transition-colors">
+            <p className="text-sm text-muted-foreground mb-2">Status</p>
+            <p className="text-lg font-semibold bg-gradient-to-r from-green-500 to-emerald-500 bg-clip-text text-transparent">Offline Ready</p>
           </div>
         </div>
       )}
